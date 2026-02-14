@@ -1,4 +1,33 @@
+__all__ = ["generator_from_args", "from_list", "from_csv"]
 
+from typing import Callable, Iterable, Any, Generator
+
+def generator_from_args(loader_func: Callable[[Any], Any],
+                        args_iterable: Iterable[Any]) \
+                            -> Callable[[], Generator[Any, None, None]]:
+    """
+    Creates a stream factory that generates batches by mapping an iterable of arguments 
+    to a loading function.
+
+    Args:
+        loader_func: A function that takes one argument (e.g., a batch index or mask) 
+                     and returns a data batch.
+        args_iterable: An iterable (list, generator, range) where each item 
+                       is passed to loader_func.
+
+    Returns:
+        A factory function that returns a fresh generator when called.
+    """
+    # Note: If args_iterable is a one-time generator (like (x for x in range(10))), 
+    # it will be exhausted after the first epoch. 
+    # For multi-epoch safety, args_iterable should be a reusable collection (list/range) 
+    # or re-created inside. 
+    
+    def factory():
+        for arg in args_iterable:
+            yield loader_func(arg)
+            
+    return factory
 
 def from_list(full_data, batch_size):
     """
